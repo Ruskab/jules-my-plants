@@ -60,7 +60,7 @@ const plantsData = [
         checkFrequency: "3-5 days",
         tip: "High humidity needs."
     },
-    // Original data from the second HTML - these will go to "Upcoming" by default for now
+    // Original data from the second HTML
     {
         name: "Potho Neón",
         scientificName: "Epipremnum aureum 'Neon'",
@@ -92,12 +92,11 @@ const plantsData = [
         tip: "Muy tolerante a la sequía. ¡No la ahogues! Agua reposada o filtrada es mejor."
     },
     {
-        name: "Calathea zebrina", // This is a duplicate name, but different scientific name.
-                                // The categorization logic should handle it, perhaps placing it in default.
+        name: "Calathea zebrina",
         scientificName: "Goeppertia zebrina",
         emoji: "🦓",
         imagePlaceholder: "Imagen de Calathea zebrina",
-        imageUrl: "https://placehold.co/600x400/A7F3D0/166534?text=Calathea",
+        imageUrl: "https://placehold.co/600x400/A7F3D0/166534?text=Calathea", // Placeholder text implies Calathea, could be more specific
         watering: "Cuando el centímetro superior del sustrato comience a secarse. Mantener húmedo, no empapado.",
         checkFrequency: "2-4 días (necesita atención frecuente con calor).",
         tip: "¡Ama la humedad! El 66.8% es genial. Agua filtrada o de lluvia es ideal."
@@ -135,19 +134,16 @@ const plantsData = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-    const upcomingPlantsGrid = document.querySelector('#upcoming-plants .grid');
-    const needsWateringPlantsGrid = document.querySelector('#needs-watering-plants .grid');
-    const overduePlantsGrid = document.querySelector('#overdue-plants .grid');
+    const allPlantsGrid = document.querySelector('#all-plants-container .grid');
 
-    // Ensure grids exist
-    if (!upcomingPlantsGrid || !needsWateringPlantsGrid || !overduePlantsGrid) {
-        console.error("One or more plant grids not found!");
+    if (!allPlantsGrid) {
+        console.error("The container for all plants (#all-plants-container .grid) was not found!");
         return;
     }
 
-    function createPlantCard(plant, category) {
+    function createPlantCard(plant) { // No category parameter
         const card = document.createElement('div');
-        card.className = 'plant-card group'; // Added group class for hover effects
+        card.className = 'plant-card group';
 
         const imageWrapper = document.createElement('div');
         imageWrapper.className = 'plant-image-wrapper';
@@ -159,40 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
         img.onerror = function() {
             this.src = 'https://placehold.co/300x300/e2e8f0/94a3b8?text=' + encodeURIComponent(plant.imagePlaceholder || 'Error Loading');
         };
-
-        const statusIndicator = document.createElement('div');
-        statusIndicator.className = 'plant-status-indicator'; // Base class
-        const statusIcon = document.createElement('span');
-        statusIcon.className = 'material-icons-outlined text-sm';
-
-        let wateringStatusText = '';
-
-        // Category-specific setup
-        if (category === 'Upcoming') {
-            statusIndicator.classList.add('bg-green-500');
-            statusIcon.textContent = 'schedule';
-            if (plant.name === "Fiddle Leaf Fig") wateringStatusText = "Water in 2 days";
-            else if (plant.name === "Snake Plant") wateringStatusText = "Water in 3 days";
-            else if (plant.name === "Peace Lily") wateringStatusText = "Water in 4 days";
-            else wateringStatusText = "Water soon"; // Default for other upcoming
-        } else if (category === 'Needs Watering') {
-            statusIndicator.classList.add('bg-orange-500');
-            statusIcon.textContent = 'opacity';
-            wateringStatusText = "Water today";
-        } else if (category === 'Overdue') {
-            statusIndicator.classList.add('bg-red-500');
-            statusIcon.textContent = 'warning_amber';
-            if (plant.name === "Calathea") wateringStatusText = "Water 2 days ago";
-            else wateringStatusText = "Overdue"; // Default for other overdue
-        } else { // Default/fallback if category is somehow not set
-            statusIndicator.classList.add('bg-gray-400');
-            statusIcon.textContent = 'help_outline';
-            wateringStatusText = "Status unknown";
-        }
-
-        statusIndicator.appendChild(statusIcon);
         imageWrapper.appendChild(img);
-        imageWrapper.appendChild(statusIndicator);
+        // NO plant-status-indicator HERE
 
         const info = document.createElement('div');
         info.className = 'plant-info';
@@ -201,23 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nameP.className = 'plant-name';
         nameP.textContent = plant.name;
 
-        const wateringStatusP = document.createElement('p');
-        wateringStatusP.className = 'plant-watering-status';
-        // Set color based on category
-        if (category === 'Upcoming') wateringStatusP.classList.add('text-green-600');
-        else if (category === 'Needs Watering') wateringStatusP.classList.add('text-orange-600');
-        else if (category === 'Overdue') wateringStatusP.classList.add('text-red-600');
-        else wateringStatusP.classList.add('text-gray-600');
-
-        const statusDot = document.createElement('span');
-        statusDot.className = 'status-dot';
-        if (category === 'Upcoming') statusDot.classList.add('bg-green-500');
-        else if (category === 'Needs Watering') statusDot.classList.add('bg-orange-500');
-        else if (category === 'Overdue') statusDot.classList.add('bg-red-500');
-        else statusDot.classList.add('bg-gray-500');
-        
-        wateringStatusP.appendChild(statusDot);
-        wateringStatusP.appendChild(document.createTextNode(wateringStatusText));
+        // NO plant-watering-status paragraph or status-dot HERE
 
         const instructionsDiv = document.createElement('div');
         instructionsDiv.className = 'watering-instructions';
@@ -227,28 +175,29 @@ document.addEventListener('DOMContentLoaded', () => {
         waterWhenLabel.className = 'instruction-label';
         waterWhenLabel.textContent = 'Water when: ';
         waterWhenP.appendChild(waterWhenLabel);
-        waterWhenP.appendChild(document.createTextNode(plant.watering || 'N/A')); // Use plant.watering here
+        waterWhenP.appendChild(document.createTextNode(plant.watering || 'N/A'));
 
         const checkEveryP = document.createElement('p');
         const checkEveryLabel = document.createElement('span');
         checkEveryLabel.className = 'instruction-label';
         checkEveryLabel.textContent = 'Check every: ';
         checkEveryP.appendChild(checkEveryLabel);
-        checkEveryP.appendChild(document.createTextNode(plant.checkFrequency || 'N/A')); // Use plant.checkFrequency here
+        checkEveryP.appendChild(document.createTextNode(plant.checkFrequency || 'N/A'));
 
         instructionsDiv.appendChild(waterWhenP);
         instructionsDiv.appendChild(checkEveryP);
 
-        // Optional: Add tip if it exists and you want to display it
         if (plant.tip) {
             const tipP = document.createElement('p');
-            tipP.className = 'text-xs text-slate-500 mt-1'; // Simple styling for tip
+            // Using text-xs and text-slate-500 for the tip, and mt-1 for a small top margin.
+            // The instruction-label class will be used for "Tip:" part for consistency.
+            tipP.className = 'text-xs text-slate-500 mt-1'; 
             tipP.innerHTML = `<span class="instruction-label">Tip:</span> ${plant.tip}`;
             instructionsDiv.appendChild(tipP);
         }
 
         info.appendChild(nameP);
-        info.appendChild(wateringStatusP);
+        // No wateringStatusP here
         info.appendChild(instructionsDiv);
 
         card.appendChild(imageWrapper);
@@ -258,29 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     plantsData.forEach(plant => {
-        let category = 'Upcoming'; // Default category
-        let targetGrid = upcomingPlantsGrid;
-
-        // Categorization logic based on names from the mockup
-        if (plant.name === "Fiddle Leaf Fig" || plant.name === "Snake Plant" || plant.name === "Peace Lily") {
-            category = 'Upcoming';
-            targetGrid = upcomingPlantsGrid;
-        } else if (plant.name === "Monstera" || plant.name === "ZZ Plant") {
-            category = 'Needs Watering';
-            targetGrid = needsWateringPlantsGrid;
-        } else if (plant.name === "Calathea") { // Catches "Calathea" from mockup data
-            category = 'Overdue';
-            targetGrid = overduePlantsGrid;
-        } else {
-            // For other plants from the merged data, assign them to 'Upcoming' for now
-            // This part can be refined if more specific rules are needed for the plants from the second HTML.
-            // For example, the "Calathea zebrina" will fall here.
-            category = 'Upcoming';
-            targetGrid = upcomingPlantsGrid;
-        }
-        
-        const plantCard = createPlantCard(plant, category);
-        targetGrid.appendChild(plantCard);
+        const plantCard = createPlantCard(plant);
+        allPlantsGrid.appendChild(plantCard); // Append to the single grid
     });
-    console.log('Plant cards generated and added to the DOM.');
+    console.log('Plant cards generated and added to the single DOM grid.');
 });
