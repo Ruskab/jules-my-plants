@@ -1,3 +1,50 @@
+function formatDateAsAgo(dateString) {
+    if (!dateString) return ""; // Handle null or empty input
+
+    try {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        // Normalize dates to midnight for day-level comparison
+        const dateToCompare = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const todayToCompare = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const yesterdayToCompare = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+        if (dateToCompare.getTime() === todayToCompare.getTime()) {
+            return "Regada hoy";
+        } else if (dateToCompare.getTime() === yesterdayToCompare.getTime()) {
+            return "Regada ayer";
+        } else {
+            // Calculate difference in days
+            const diffTime = todayToCompare.getTime() - dateToCompare.getTime();
+            // Use Math.floor for days difference if it's past, Math.ceil could be misleading for "X days ago"
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+            
+            if (diffDays > 1) { 
+                return `Regada hace ${diffDays} días`;
+            } else if (diffDays === 1 ) { 
+                // This handles the case where it's more than 24 hours but less than 48 hours,
+                // and wasn't caught by the simple "yesterday" check (e.g. due to time part).
+                return "Regada ayer"; 
+            } else if (diffDays < 0) {
+                 // Date is in the future
+                return ""; // Or a specific message like "Fecha futura"
+            }
+             else {
+                // Default for less than 1 day difference not matching "hoy" (e.g. if times are slightly off but same day)
+                // or any other unhandled cases. Could also be "Regada hoy" if dateToCompare is today.
+                // For safety, returning empty if it's not clearly in the past or today/yesterday.
+                return "";
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing date:", e);
+        return ""; // Invalid date string
+    }
+}
+
 const plantsData = [
     {
         name: "Potho Neón",
@@ -138,6 +185,33 @@ document.addEventListener('DOMContentLoaded', () => {
         // No wateringStatusP here
         info.appendChild(instructionsDiv);
 
+        // New Last Watered Date Display
+        const lastWateredDisplay = document.createElement('p');
+        lastWateredDisplay.className = 'last-watered-display text-xs text-slate-600 mt-2 pt-2 border-t border-slate-100';
+        const plantIdForElement = plant.name.replace(/\s+/g, '-').toLowerCase();
+        lastWateredDisplay.id = `last-watered-${plantIdForElement}`;
+        // lastWateredDisplay.textContent = ""; // Set by LocalStorage logic below
+
+        // New "Regada hoy" Button
+        const wateredButton = document.createElement('button');
+        wateredButton.className = 'watered-button mt-2 px-3 py-1.5 text-xs font-medium text-center text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300';
+        wateredButton.id = `watered-btn-${plantIdForElement}`;
+        wateredButton.textContent = 'Regada hoy';
+        wateredButton.dataset.plantname = plant.name;
+
+        // Append new elements to the info div
+        info.appendChild(lastWateredDisplay);
+        info.appendChild(wateredButton);
+
+        // Load and display stored date
+        const storageKey = `plantCareApp_lastWatered_${plantIdForElement}`;
+        const storedDate = localStorage.getItem(storageKey);
+        if (storedDate) {
+            lastWateredDisplay.textContent = formatDateAsAgo(storedDate);
+        } else {
+            lastWateredDisplay.textContent = ""; // Default message changed
+        }
+
         card.appendChild(imageWrapper);
         card.appendChild(info);
 
@@ -148,5 +222,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const plantCard = createPlantCard(plant);
         allPlantsGrid.appendChild(plantCard); // Append to the single grid
     });
-    console.log('Plant cards generated and added to the single DOM grid.');
+
+    // Event Delegation for "Regada hoy" buttons
+    allPlantsGrid.addEventListener('click', function(event) {
+        const targetButton = event.target.closest('.watered-button'); // Handles clicks on button or its children
+        
+        if (targetButton) {
+            const plantName = targetButton.dataset.plantname;
+            if (plantName) {
+                const plantIdForStorage = plantName.replace(/\s+/g, '-').toLowerCase();
+                const storageKey = `plantCareApp_lastWatered_${plantIdForStorage}`;
+                const nowDate = new Date();
+                const nowDateString = nowDate.toISOString();
+
+                localStorage.setItem(storageKey, nowDateString);
+
+                const displayDate = formatDateAsAgo(nowDateString);
+                
+                const lastWateredDisplayElement = document.getElementById(`last-watered-${plantIdForStorage}`);
+                if (lastWateredDisplayElement) {
+                    lastWateredDisplayElement.textContent = displayDate;
+                } else {
+                    console.error(`Display element not found for ${plantName}`);
+                }
+            }
+        }
+    });
+
+    console.log('Plant cards generated and LocalStorage logic initiated.');
 });
